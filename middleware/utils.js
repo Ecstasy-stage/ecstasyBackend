@@ -3,20 +3,10 @@ const { userRecordConstructor, user } = require('firebase-functions/lib/provider
 const firebase = require('./firebaseFunc.js');
 const { sendNotification, postSilentNotification } = require('./notifications');
 const admin = require('firebase-admin');
-var bucket = admin.storage().bucket();
 const { parsePhoneNumber } = require('libphonenumber-js')
 const {sendLoginSuccessEmail} = require('./sendEmail')
-//const storage = require('firebase/storage'); 
-//var storage = require('@google-cloud/storage')
 
-const { Storage } = require('@google-cloud/storage');
-const { forEach } = require('lodash');
-const { validateRequestWithBody } = require('twilio/lib/webhooks/webhooks');
 
-const Busboy = require('busboy')
-const os = require('os')
-const fs = require('fs');
-const { AccountContext } = require('twilio/lib/rest/api/v2010/account');
 
 class Utils {
 

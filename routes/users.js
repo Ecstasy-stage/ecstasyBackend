@@ -8,9 +8,6 @@ const express = require('express');
 const router = new express.Router();
 
 const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
 
 const auth = require('../middleware/auth');
 const { Utils } = require('../middleware/utils')
@@ -23,21 +20,8 @@ const { MRSUploadData } = require("../config/modules");
 
 const { parsePhoneNumber } = require('libphonenumber-js')
 
-const { equal } = require("assert");
-const { user } = require("firebase-functions/lib/providers/auth");
-const { resourceUsage } = require("process");
-const { ESRCH } = require("constants");
-const { runInContext } = require("vm");
-const { response } = require("express");
-var bodyParser = require('body-parser');
-const multer = require('multer')
+require('dotenv').config({ path: __dirname + '/config/.env' });
 
-const { promisify } = require('util');
-
-const { TokenInstance } = require("twilio/lib/rest/api/v2010/account/token");
-require('dotenv').config();
-
-const unlinkAsync = promisify(fs.unlink)
 
 
 router.use(

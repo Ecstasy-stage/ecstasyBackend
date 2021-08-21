@@ -7,9 +7,6 @@ const cors = require('cors');
 const http = require('http')
 
 const morgan = require('morgan');
-const _ = require('lodash');
-
-const os = require('os')
 
 
 
