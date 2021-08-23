@@ -37,7 +37,6 @@ router.use(express.json());
 //service_id route
 router.post('/resend-otp' ,async(req , res) =>{
 
-  require('dotenv').config();
 
   const phoneNumber = req.body.phonenumber;
 
@@ -102,6 +101,7 @@ router.post('/get-otp' , async (req , res)  => {
             sid = service.sid;
         })
         .catch(err => {
+            console.log(err);
             if(err.status != 200) {
                 res.json({
                     "service_id": null,
