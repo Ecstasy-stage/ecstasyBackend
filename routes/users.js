@@ -1,13 +1,10 @@
 var admin = require("firebase-admin");
 const firebase = require('../middleware/firebaseFunc');
-const functions = require('firebase-functions');
-var bucket = firebase.admin.storage().bucket();
-const { database } = require("firebase-admin");
 
 const express = require('express');
 const router = new express.Router();
 
-const fs = require('fs');
+const { fork } = require('child_process')
 
 const auth = require('../middleware/auth');
 const { Utils } = require('../middleware/utils')
@@ -365,10 +362,27 @@ router.post('/profile/can-be-friends', auth, (req, res) => {
 
 router.post('/test', auth, async (req, res) => {
     
-    await Utils.loadAdmiringIdentifier(req.user.uid).then(result => {
-        console.log(result);
-        res.json(result)
-    })
+    let js1 = {
+        "name": "rahul",
+        "branch": "cse"
+    }
+    res.write(JSON.stringify(js1));
+    let js2 = {
+        "name": {
+            "nm": "rahul",
+            "b": "css"
+        },
+        "cls": {
+            "nm": "twr",
+            "b": "ee"
+        }
+    }
+    setTimeout(() => {
+        res.write(JSON.stringify(js2));
+        res.end()
+        console.log('timeout');
+    }, 5000)
+    // res.send('all done')
     // sendFeedbackEmail("rahul", "rt945471@gmail.com", "feedback");
     // sendReportEmail("rahul", "rahull", "jfosj", "jfosej")
 })
@@ -506,7 +520,9 @@ router.post('/profile/deny-friend', auth, (req, res) => {
 router.post('/profile/thumbnail', auth, (req, res) => {
 
     const user = req.user
-    Utils.loadThumbnail(user.uid).then(videos => res.send(videos))
+    console.log('req rec');
+ 
+    Utils.loadThumbnail(user.uid).then(videos => res.status(200).send(videos))
 
 });
 

@@ -1,10 +1,8 @@
-
-const { userRecordConstructor, user } = require('firebase-functions/lib/providers/auth');
 const firebase = require('./firebaseFunc.js');
 const { sendNotification, postSilentNotification } = require('./notifications');
 const admin = require('firebase-admin');
 const { parsePhoneNumber } = require('libphonenumber-js')
-const {sendLoginSuccessEmail} = require('./sendEmail')
+const {sendLoginSuccessEmail} = require('./sendEmail');
 
 
 
@@ -442,64 +440,97 @@ class Utils {
         return videos
     }
     
-// find first video identifier shared by user's friends and returning in array....
+    // find user friends and return their recently shared 5 videos in an array....
     static async sharedVideoIdentifiers(userIdentifier) {
 
-        var finalValues = []
+        var finalValues = new Map();
 
+        // get all friends id.....
         const friendIdentifiers = await Utils.friendsIdentifier(userIdentifier)
 
+        // for each friend......find their recent 5 shared videos...
         for (var index in friendIdentifiers) {
 
 
             const friendIdentifier = friendIdentifiers[index]
 
-            const ref = firebase.admin.database().ref().child("USER").child(friendIdentifier).child('sharedvideos')
+            const ref = admin.database().ref(`USER/${friendIdentifier}/sharedvideos`).limitToLast(5);
             const snapshot = await ref.once('value')
             
-            var values = snapshot.val()
-        
-            if (values == undefined || values == null) {
-                values = []
-                continue
+            
+            var recentSharedVideos = snapshot.val()
+            
+            if(recentSharedVideos == undefined || recentSharedVideos == null) {
+                continue;
             }
-            finalValues.push(
-                {
-                    videoOwner: values[0].videoOwner,
-                    videoNumber: values[0].vnum,
-                    videoSource: friendIdentifier
+
+            for(let i in recentSharedVideos) {
+                let video = recentSharedVideos[i];
+                // console.log('vid', video);
+                let videoOwner = video.videoOwner;
+                let vnum = video.vnum;
+                if(finalValues.has(videoOwner)) {
+                    let currData = finalValues.get(videoOwner);
+                    if(currData.has(vnum)) {
+                        let currVidData = currData.get(vnum);
+                        // console.log('has vnum');
+                        currVidData.sharedBy.add(friendIdentifier);
+                        // console.log(currVidData.sharedBy);
+
+                    } else {
+                        // console.log('no vnum');
+                        let data = {
+                            "sharedBy": new Set().add(friendIdentifier)
+                        }
+                        currData.set(vnum, data);
+                    }
+                } else {
+                    // console.log('no owner');
+                    let newVnum = new Map();
+                    let data = {
+                        "sharedBy": new Set().add(friendIdentifier)
+                    }
+                    newVnum.set(vnum, data);
+                    finalValues.set(videoOwner, newVnum);
                 }
-            )
+                
+            }
         }
-        
         return finalValues
     }
 
+    // return videos shared by user's friends.....
     static async sharedVideos(userIdentifier) {
-        var videos = []
-        const sharedVideoIdentifiers = await Utils.sharedVideoIdentifiers(userIdentifier)
         
-        for (var index in sharedVideoIdentifiers) {
-            const id = sharedVideoIdentifiers[index]
-           
-            var newVideo = await Utils.loadSharedVideo(id.videoOwner, id.videoNumber)
-            newVideo.source = id.videoSource
-            videos.push(newVideo)
-        }
-        return videos
+        // shared videos data...
+        var sharedVideosData = await Utils.sharedVideoIdentifiers(userIdentifier)
+        
+        // for each shared video....load video data....
+        sharedVideosData.forEach((value, key) => {
+            let videoOwner = key;
+            value.forEach(async (vnumData, vnumKey) => {
+                let vnum = vnumKey;
+                let videoData = await Utils.loadVideoByVnum(videoOwner, vnum);
+                vnumData.videoData = videoData;
+            })
+        })
+        return sharedVideosData;
     }
 
-    static async loadSharedVideo(ownerIdentifier, vnum) {
-        const ref = firebase.admin.database().ref().child("USER").child(ownerIdentifier).child('videolist').child(vnum)
-        if (ref.exists == false) {
-            return
-        }
-        
+    // load video data of given user's video.......
+    static async loadVideoByVnum(ownerIdentifier, vnum) {
+
+        const ref = admin.database().ref(`USER/${ownerIdentifier}/videolist/${vnum}`);
         const snapshot = await ref.once('value')
-        return snapshot.toJSON()
+        if (snapshot.exists()) {
+            return snapshot.toJSON();
+        }
+        
+        return null;
         
     }
 
+    // load user's admiring(following) list...
     static async loadAdmiringIdentifier(userIdentifier) {
         const ref = firebase.admin.database().ref('USER').child(userIdentifier).child('admiring')
         
@@ -517,66 +548,71 @@ class Utils {
         return identifiers
     }
 
-    static async admiringVideos(userIdentifier) {
-        var videos = []
-        const identifier = await Utils.loadAdmiringIdentifier(userIdentifier)
-
-        for (var index in identifier) {
-            const newVideos = await Utils.videosFromUser(identifier[index])
-            newVideos.forEach(video => {
-                video.source = identifier[index]
-                videos.push(video)
+    // load 5 recent videos of user..........
+    static async loadRecentVideos(videoOwner, sharedVideos) {
+        const ref = firebase.admin.database().ref(`USER/${videoOwner}/videolist`).limitToLast(5);
+        const snapshots = await ref.once('value');
+        if(snapshots.exists()) {
+            snapshots.forEach(snap => {
+                let vnum = snap.val().vnum
+                // console.log('vnum', vnum);
+                if(sharedVideos.has(videoOwner)) {
+                    let currData = sharedVideos.get(videoOwner);
+                    if(!currData.has(vnum)) {
+                        let data = {
+                            "sharedBy": new Set(),
+                            "videoData": snap.val()
+                        }
+                        currData.set(vnum, data);
+                    }
+                } else {
+                    let newVnum = new Map();
+                    let data = {
+                        "sharedBy": new Set(),
+                        "videoData": snap.val()
+                    }
+                    newVnum.set(vnum, data);
+                    sharedVideos.set(videoOwner, newVnum);
+                }
             })
         }
+        return sharedVideos;
+    }
+
+    static async admiringVideos(userIdentifier, sharedVideos) {
+
+        const admiringsIdentifiers = await Utils.loadAdmiringIdentifier(userIdentifier)
+
+        for(let i in admiringsIdentifiers) {
+            let videoOwner = admiringsIdentifiers[i];
+            sharedVideos = await Utils.loadRecentVideos(videoOwner, sharedVideos);
+        }
     
-        return videos
+        return sharedVideos
     }
 
     static async loadThumbnail(userIdentifier) {
         var videos = []
-        const identifiers = {}
-        
+        console.log('runn');
         const sharedVideos = await Utils.sharedVideos(userIdentifier)
         
-        //const friendLoadedVideos = await Utils.friendVideos(userIdentifier)
-       
-        const admiringVideos = await Utils.admiringVideos(userIdentifier)
-        
-        sharedVideos.forEach(video => {
-            videos.push(video)
-            if(identifiers[video.id]) {
-                identifiers[video.id].push(video.vnum);
-            } else {
-                identifiers[video.id] = [video.vnum];
-            }
-        })
-        // friendLoadedVideos.forEach(video => {
-        //     videos.push(video)
-        // })
 
-        admiringVideos.forEach(video => {
-            videos.push(video)
-            if(identifiers[video.id]) {
-                identifiers[video.id].push(video.vnum);
-            } else {
-                identifiers[video.id] = [video.vnum];
-            }
+        const admiringVideos = await Utils.admiringVideos(userIdentifier, sharedVideos)
+        
+        videos = Array.from(admiringVideos)
+
+        videos.map(arr => {
+            let videoData = admiringVideos.get(arr[0])
+            arr[1] = {}
+            videoData.forEach((value, key) => {
+                arr[1][key] = value;
+                arr[1][key].sharedBy = [...arr[1][key].sharedBy]
+            })
+            return arr;
         })
         
 
-        let allVideos = await Utils.videos(userIdentifier)
-
-        allVideos.forEach(video => {
-            // console.log(video);
-            if( identifiers[video.id] && !identifiers[video.id].includes(video.vnum) ) {
-                videos.push(video);
-            }
-            if(video.id != userIdentifier && !identifiers[video.id]) {
-                videos.push(video);
-            }
-        })
-    
-        return videos
+        return videos;
     }
     
     static async likeVideo(userIdentifier, videoOwner, videoNumber) {
@@ -730,7 +766,7 @@ class Utils {
         const countSnapshot = await admiringCountRef.once('value')
         var count = Number(countSnapshot.toJSON().admirerscount)
         if (count == undefined) {
-            count = "1"
+            count = "0"
         }
         admiringCountRef.update({"admirerscount": String(count - 1)})
     }

@@ -1,10 +1,10 @@
-//const functions = require('firebase-functions');
 const express = require('express');
 const app1 = express();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const http = require('http')
+const compress = require('./middleware/compression')
 
 const morgan = require('morgan');
 
@@ -14,23 +14,10 @@ const morgan = require('morgan');
 //    M I D D L E W A R E
 //    *******************
 
-// app1.use(fileUpload());
-
-// const options = {
-//     uploadDir: os.tmpdir(),
-//     autoClean: true
-//   };
-   
-//   // parse data with connect-multiparty. 
-//   app1.use(formData.parse(options));
-//   // delete from the request all empty files (size == 0)
-//   app1.use(formData.format());
-//   // change the file objects to fs.ReadStream 
-//   app1.use(formData.stream());
-//   // union the body and the files
-//   app1.use(formData.union());
 
 app1.use(cors({ origin: true }))
+
+app1.use(compress);
 
 //express parsing json
 
@@ -61,7 +48,7 @@ app1.use(bodyParser.json());
 
 //Routes setup
 const users = require('./routes/users');
-const { ESRCH } = require('constants');
+// const { ESRCH } = require('constants');
 
 
 

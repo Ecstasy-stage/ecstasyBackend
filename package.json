@@ -10,36 +10,23 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "10"
+    "node": "14"
   },
   "main": "index.js",
+  "private": true,
+  "devDependencies": {
+    "nodemon": "^2.0.12"
+  },
   "dependencies": {
-    "@sendgrid/mail": "^7.4.5",
-    "all": "0.0.0",
+    "@sendgrid/mail": "^7.4.6",
     "busboy": "^0.3.1",
-    "child_process": "^1.0.2",
+    "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "firebase-admin": "^9.9.0",
-    "firebase-functions": "^3.11.0",
-    "firebase-messaging": "^1.0.6",
-    "fluent-ffmpeg": "^2.1.2",
-    "follow-redirects": "^1.13.0",
-    "formidable": "^1.2.2",
-    "jimp": "^0.16.1",
-    "libphonenumber-js": "^1.8.5",
-    "lodash": "^4.17.21",
-    "mime": "^2.5.2",
-    "morgan": "^1.10.0",
-    "multer": "^1.4.2",
-    "nodemailer": "^6.6.1",
-    "tmp": "^0.2.1",
-    "twilio": "^3.63.0",
-    "util": "^0.12.4"
-  },
-  "private": true,
-  "devDependencies": {
-    "nodemon": "^2.0.7"
+    "firebase-admin": "^9.11.1",
+    "follow-redirects": "^1.14.2",
+    "libphonenumber-js": "^1.9.25",
+    "nodemailer": "^6.6.3"
   }
 }

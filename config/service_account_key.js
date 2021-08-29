@@ -1,5 +1,4 @@
 require("dotenv").config({ path: __dirname + "/.env"});
-console.log(String(process.env.PRIVATE_KEY));
 
 const serviceAccountKey = {
     "type": "service_account",
