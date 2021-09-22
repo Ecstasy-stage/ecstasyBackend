@@ -1,4 +1,4 @@
-const firebase = require('./firebaseFunc.js');
+const firebase = require('./firebase_admin.js');
 const { sendNotification, postSilentNotification } = require('./notifications');
 const admin = require('firebase-admin');
 const { parsePhoneNumber } = require('libphonenumber-js')
@@ -9,7 +9,7 @@ const {sendLoginSuccessEmail} = require('./sendEmail');
 class Utils {
 
     static async loadSmallUser(identifier) {
-        const database = firebase.admin.database()
+        const database = admin.database()
         const ref = database.ref().child("SMALL-USER").child(identifier)
         
         var user = await ref.once('value', snapshot => { return snapshot.val() })
@@ -21,7 +21,7 @@ class Utils {
     }
 
     static async loadUser(identifier) {
-        const database = firebase.admin.database()
+        const database = admin.database()
         const ref = database.ref().child("USER").child(identifier)
         
         var user = await ref.once('value', snapshot => { return snapshot.val() })
@@ -67,7 +67,7 @@ class Utils {
         const user = await Utils.loadUser(userIdentifier)
         const friend = await Utils.loadUser(friendIdentifier)
         
-        const userRef = firebase.admin.database().ref().child("USER").child(user.id).child("friendrns")
+        const userRef = admin.database().ref().child("USER").child(user.id).child("friendrns")
         userRef.once('value').then(snapshot => {
             const count = snapshot.hasChildren() ? snapshot.numChildren() : 0
             const body = {
@@ -82,7 +82,7 @@ class Utils {
             newRef.set(body)
         })
     
-        const friendRef = firebase.admin.database().ref().child("USER").child(friend.id).child("friendrns")
+        const friendRef = admin.database().ref().child("USER").child(friend.id).child("friendrns")
         friendRef.once('value').then(snapshot => {
             const count = snapshot.hasChildren() ? snapshot.numChildren() : 0
             const body = {
@@ -106,7 +106,7 @@ class Utils {
     
 
     static async acceptFriendRequest(userIdentifier, friendIdentifier) {
-        const userBasic = firebase.admin.database().ref().child("USER").child(userIdentifier)
+        const userBasic = admin.database().ref().child("USER").child(userIdentifier)
         const user = userBasic.child("friendrns")
 
         user.orderByChild('id').equalTo(friendIdentifier).once('child_added', async function(snapshot) {
@@ -120,7 +120,7 @@ class Utils {
             snapshot.ref.remove()
         })
     
-        const friendBasic = firebase.admin.database().ref().child("USER").child(friendIdentifier)
+        const friendBasic = admin.database().ref().child("USER").child(friendIdentifier)
         const friend = friendBasic.child("friendrns")
         friend.orderByChild('id').equalTo(userIdentifier).once('child_added', async function(snapshot) {
             const userFriend = friendBasic.child('friends')
@@ -143,13 +143,13 @@ class Utils {
     }
     
     static async denyFriendRequest(userIdentifier, friendIdentifier) {
-        const userBasic = firebase.admin.database().ref().child("USER").child(userIdentifier)
+        const userBasic = admin.database().ref().child("USER").child(userIdentifier)
         const user = userBasic.child("friendrns")
         user.orderByChild('id').equalTo(friendIdentifier).once('child_added', function(snapshot) {
             snapshot.ref.remove()
         })
     
-        const friendBasic = firebase.admin.database().ref().child("USER").child(friendIdentifier)
+        const friendBasic = admin.database().ref().child("USER").child(friendIdentifier)
         const friend = friendBasic.child("friendrns")
         friend.orderByChild('id').equalTo(userIdentifier).once('child_added', function(snapshot) {
             snapshot.ref.remove()
@@ -158,8 +158,8 @@ class Utils {
     
 
     // static async usersFrom`  Number(identifiers, number) {
-    //     const ref = firebase.admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
-    //     //const ref = firebase.admin.database().ref().child('ALLUSER').orderByChild('phonenumber').equalTo(number)
+    //     const ref = admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
+    //     //const ref = admin.database().ref().child('ALLUSER').orderByChild('phonenumber').equalTo(number)
     //     const snapshot = await ref.once('value')
     //     var newUsers = []
     //     snapshot.forEach(childSnapshot => {
@@ -221,7 +221,7 @@ class Utils {
 
             nationalNumber = num
         }
-        const ref = firebase.admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
+        const ref = admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
         const snap = await ref.once('value')
         if(snap.exists()) {
             return false
@@ -231,7 +231,7 @@ class Utils {
     }
 
     static async userFromNumber(identifiers, number) {
-        const ref = firebase.admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
+        const ref = admin.database().ref().child('USER').orderByChild('phonenumber').equalTo(number)
         const snap = await ref.once('value')
         var user
         if(snap.exists()) {
@@ -267,7 +267,7 @@ class Utils {
 
         const users = []
 
-        const ref = firebase.admin.database().ref().child('USER')
+        const ref = admin.database().ref().child('USER')
         const snapshot = await ref.once('value')
         
         snapshot.forEach(snap => {
@@ -318,25 +318,27 @@ class Utils {
     
     static async friendRequests(identifier) {
         const friendRequest = []
-        var ref = firebase.admin.database().ref().child("USER").child(identifier).child("friendrns")
+        var ref = admin.database().ref().child("USER").child(identifier).child("friendrns")
         if (ref.exists == false) {
             return []
         }
         const snapshot = await ref.once('value')
         
         let val = snapshot.val()
-        let keys = Object.keys(val)
-
-        keys.forEach(key => {
-            friendRequest.push(val[key]);
-        })
-
-        return friendRequest
+        if(val !== null) {
+            let keys = Object.keys(val)
+    
+            keys.forEach(key => {
+                friendRequest.push(val[key]);
+            })
+    
+        }
+        return friendRequest;
     }
     
     static async friendsIdentifier(identifier) {
 
-        const basicRef = firebase.admin.database().ref().child("USER").child(identifier)
+        const basicRef = admin.database().ref().child("USER").child(identifier)
         const basicSnapshot = await basicRef.once('value')
 
         if (basicSnapshot.hasChild('friends') == false) {
@@ -396,7 +398,7 @@ class Utils {
     }
     
     static async deleteFriend(userIdentifier, friendIdentifier) {
-        const ref = firebase.admin.database().ref().child("USER")
+        const ref = admin.database().ref().child("USER")
         const userRef = ref.child(userIdentifier).child("friends").orderByChild('id').equalTo(friendIdentifier)
         const userSnapshot = await userRef.once('child_added')
         if (userSnapshot.exists) {
@@ -415,7 +417,7 @@ class Utils {
     }
     
     static async videosFromUser(userIdentifier) {
-        const ref = firebase.admin.database().ref().child("USER").child(userIdentifier).child('videolist')
+        const ref = admin.database().ref().child("USER").child(userIdentifier).child('videolist')
         if (ref.exists == false) {
             return []
         }
@@ -532,7 +534,7 @@ class Utils {
 
     // load user's admiring(following) list...
     static async loadAdmiringIdentifier(userIdentifier) {
-        const ref = firebase.admin.database().ref('USER').child(userIdentifier).child('admiring')
+        const ref = admin.database().ref('USER').child(userIdentifier).child('admiring')
         
         if (ref.exists == false) {
             return []
@@ -550,7 +552,7 @@ class Utils {
 
     // load 5 recent videos of user..........
     static async loadRecentVideos(videoOwner, sharedVideos) {
-        const ref = firebase.admin.database().ref(`USER/${videoOwner}/videolist`).limitToLast(5);
+        const ref = admin.database().ref(`USER/${videoOwner}/videolist`).limitToLast(5);
         const snapshots = await ref.once('value');
         if(snapshots.exists()) {
             snapshots.forEach(snap => {
@@ -617,7 +619,7 @@ class Utils {
     
     static async likeVideo(userIdentifier, videoOwner, videoNumber) {
         
-        const userRef = firebase.admin.database().ref().child("USER").child(videoOwner)
+        const userRef = admin.database().ref().child("USER").child(videoOwner)
         const likeDislike = userRef.child('likedislike').child(String(videoNumber)).child('likedby')
         likeDislike.push({"id": userIdentifier})
     
@@ -631,7 +633,7 @@ class Utils {
     }
     
     static async deleteVideoLike(userIdentifier, videoOwner, videoNumber) {
-        const userRef = firebase.admin.database().ref().child("USER").child(videoOwner)
+        const userRef = admin.database().ref().child("USER").child(videoOwner)
         const likeDislike = userRef.child('likedislike').child(String(videoNumber)).child('likedby').orderByChild('id').equalTo(userIdentifier)
         const likeDislikeSnapshot = await likeDislike.once('child_added')
         likeDislikeSnapshot.ref.remove()
@@ -647,7 +649,7 @@ class Utils {
     
     static async dislikeVideo(userIdentifier, videoOwner, videoNumber) {
         
-        const userRef = firebase.admin.database().ref().child("USER").child(videoOwner)
+        const userRef = admin.database().ref().child("USER").child(videoOwner)
         const likeDislike = userRef.child('likedislike').child(String(videoNumber)).child('dislikedby')
         likeDislike.push({"id": userIdentifier})
     
@@ -662,7 +664,7 @@ class Utils {
     
     static async deleteVideoDislike(userIdentifier, videoOwner, videoNumber) {
         
-        const userRef = firebase.admin.database().ref().child("USER").child(videoOwner)
+        const userRef = admin.database().ref().child("USER").child(videoOwner)
         const likeDislike = userRef.child('likedislike').child(String(videoNumber)).child('dislikedby').orderByChild('id').equalTo(userIdentifier)
         const likeDislikeSnapshot = await likeDislike.once('child_added')
         likeDislikeSnapshot.ref.remove()
@@ -677,7 +679,7 @@ class Utils {
     }
     
     static async likesVideo(userIdentifier, videoOwner, videoNumber) {
-        const ref = firebase.admin.database().ref().child('USER').child(videoOwner).child("likedislike").child(String(videoNumber)).child('likedby')
+        const ref = admin.database().ref().child('USER').child(videoOwner).child("likedislike").child(String(videoNumber)).child('likedby')
         if (ref.exists == false) {
             return false
         }
@@ -695,7 +697,7 @@ class Utils {
     }
     
     static async dislikesVideo(userIdentifier, videoOwner, videoNumber) {
-        const ref = firebase.admin.database().ref().child('USER').child(videoOwner).child("likedislike").child(String(videoNumber)).child('dislikedby')
+        const ref = admin.database().ref().child('USER').child(videoOwner).child("likedislike").child(String(videoNumber)).child('dislikedby')
         if (ref.exists == false) {
             return false
         }
@@ -714,7 +716,7 @@ class Utils {
 
     static async usersFromName(name, identifier) {
         var users = []
-        const ref = firebase.admin.database().ref('USER').orderByChild('name').startAt(name).endAt(name + '\uf8ff')
+        const ref = admin.database().ref('USER').orderByChild('name').startAt(name).endAt(name + '\uf8ff')
         
         const snapshot = await ref.once('value')
         
@@ -730,7 +732,7 @@ class Utils {
     }
 
     static async admire(userIdentifier, admireIdentifier) {
-        const globalUserRef = firebase.admin.database().ref('USER')
+        const globalUserRef = admin.database().ref('USER')
         const userRef = globalUserRef.child(userIdentifier).child('admiring')
         const snapshot = await userRef.once('value')
         userRef.child(String(snapshot.numChildren())).set({'id': admireIdentifier})
@@ -749,7 +751,7 @@ class Utils {
     }
 
     static async removeAdmire(userIdentifier, admireIdentifier) {
-        const ref = firebase.admin.database().ref().child("USER")
+        const ref = admin.database().ref().child("USER")
         const admiringRef = ref.child(userIdentifier).child("admiring").orderByChild('id').equalTo(admireIdentifier)
         const admiringSnapshot = await admiringRef.once('child_added')
         if (admiringSnapshot.exists) {
@@ -774,7 +776,7 @@ class Utils {
     static async videosFromName(title, currentUser) {
         const name = title.toLowerCase()
         var videos = []
-        const snapshot = await firebase.admin.database().ref('USER').once('value')
+        const snapshot = await admin.database().ref('USER').once('value')
         snapshot.forEach(snapshot => {
             const videolist = snapshot.toJSON().videolist
             if (videolist != undefined) {
@@ -799,7 +801,7 @@ class Utils {
     }
 
     static async updateWatchedVideos(userIdentifier, videoOwner, videoNumber) {
-        const ref = firebase.admin.database().ref('USER')
+        const ref = admin.database().ref('USER')
         const userRef = ref.child(userIdentifier)
         const vidRef = ref.child(videoOwner).child('videolist').child(videoNumber)
         const watchRef = userRef.child('watchedVideo')
@@ -854,7 +856,7 @@ class Utils {
     static async videos(currentUser) {
         var videos = []
 
-        const ref = firebase.admin.database().ref("USER");
+        const ref = admin.database().ref("USER");
         const snapshots = await ref.once('value');
 
         snapshots.forEach(snap => {
@@ -874,7 +876,7 @@ class Utils {
 
         // const watchedVideo = []
 
-        // const watchedVideosSnapshot = await firebase.admin.database().ref('USER').child(currentUser).child('watchedVideo').once('value')
+        // const watchedVideosSnapshot = await admin.database().ref('USER').child(currentUser).child('watchedVideo').once('value')
         // if(watchedVideosSnapshot.exists()) {
         //     watchedVideosSnapshot.forEach(snap => {
         //         var id = snap.key
@@ -892,7 +894,7 @@ class Utils {
         //     })
         // }
 
-        // const snapshot = await firebase.admin.database().ref('USER').once('value')
+        // const snapshot = await admin.database().ref('USER').once('value')
         // snapshot.forEach(snapshot => {
         //     const videolist = snapshot.toJSON().videolist
         //     if (videolist != undefined) {
@@ -926,7 +928,7 @@ class Utils {
     }
 
     static async login(id, type, name, photourl) {
-        const ref = firebase.admin.database().ref('USER').child(id)
+        const ref = admin.database().ref('USER').child(id)
         const snapshot = await ref.once('value')
         if (snapshot.exists() && snapshot.hasChildren()) {
             return await Utils.updateUser(id, type)
@@ -937,7 +939,7 @@ class Utils {
 
     static async createUser(id, type, name, photourl) {
 
-        const ref = firebase.admin.database().ref('USER').child(id)
+        const ref = admin.database().ref('USER').child(id)
         ref.set({
             'admirerscount': '0',
             'followerscount': '0',
@@ -950,7 +952,7 @@ class Utils {
             'type': type
           })
       
-          const secondRef = firebase.admin.database().ref('ALLUSER')
+          const secondRef = admin.database().ref('ALLUSER')
           const snapshot = await secondRef.once('value')
           const number = String(snapshot.numChildren())
           secondRef.child(number).set({
@@ -959,7 +961,7 @@ class Utils {
             'phonenumber': '',
             'photo': photourl
           })
-          const smallRef = firebase.admin.database().ref('SMALL-USER')
+          const smallRef = admin.database().ref('SMALL-USER')
           smallRef.child(id).set({
             'name': name,
             'photourl': photourl,
@@ -972,7 +974,7 @@ class Utils {
     }
 
     static async updateUser(id, type) {
-        const ref = firebase.admin.database().ref('USER').child(id)
+        const ref = admin.database().ref('USER').child(id)
         const snapshot = await ref.once('value')
         const object = snapshot.toJSON()
         return (object.type == type)
@@ -981,9 +983,9 @@ class Utils {
     // update db with user who shared video and increment share count....
 
     static async shareVideo(userIdentifier, videoOwnerIdentifier, videoNumber, caption, commentIdentifier) {
-        let user = await firebase.admin.database().ref().child(`USER/${userIdentifier}`).once('value')
+        let user = await admin.database().ref().child(`USER/${userIdentifier}`).once('value')
         const username = user.val().username
-        const ownerRef = firebase.admin.database().ref('USER').child(videoOwnerIdentifier)
+        const ownerRef = admin.database().ref('USER').child(videoOwnerIdentifier)
         const sharedByRef = ownerRef.child('sharedby').child(videoNumber).child(commentIdentifier)
         sharedByRef.set(userIdentifier)
 
@@ -1002,13 +1004,13 @@ class Utils {
         const sharesCount = Number(countSnapshot.toJSON().shares)
         sharesCountRef.update({'shares': String(sharesCount + 1)})
 
-        const userRef = firebase.admin.database().ref('USER').child(userIdentifier).child('sharedvideos')
+        const userRef = admin.database().ref('USER').child(userIdentifier).child('sharedvideos')
         const userSnapshot = await userRef.once('value')
         userRef.child(String(userSnapshot.numChildren())).set({'videoOwner': videoOwnerIdentifier, 'vnum': videoNumber})
     }
 
     static async replyToComment(userIdentifier, videoOwnerIdentifier, videoNumber, commentIdentifier, caption) {
-        const ref = firebase.admin.database().ref('USER').child(videoOwnerIdentifier).child('comments').child(videoNumber).child(commentIdentifier).child('subcomments')
+        const ref = admin.database().ref('USER').child(videoOwnerIdentifier).child('comments').child(videoNumber).child(commentIdentifier).child('subcomments')
         ref.push({
             'comments': caption,
             'id': userIdentifier,
@@ -1016,14 +1018,14 @@ class Utils {
             'likes': '0'
         })
 
-        const comment = await firebase.admin.database().ref('USER').child(videoOwnerIdentifier).child('comments').child(videoNumber).child(commentIdentifier).once('value')
+        const comment = await admin.database().ref('USER').child(videoOwnerIdentifier).child('comments').child(videoNumber).child(commentIdentifier).once('value')
         postSilentNotification(comment.toJSON().id, 'New reply', comment.toJSON().comments)
         sendNotification('New reply', comment.toJSON().comments, comment.toJSON().id)
     }
 
     static async likeComment(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
         
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
         const likeDislike = ref.child('likedby')
         likeDislike.push().set({"id": userIdentifier})
     
@@ -1043,7 +1045,7 @@ class Utils {
     
     static async deleteCommentLike(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
         
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
         const likeDislike = ref.child('likedby').orderByChild('id').equalTo(userIdentifier)
         const likeDislikeSnapshot = await likeDislike.once('child_added')
         likeDislikeSnapshot.ref.remove()
@@ -1057,7 +1059,7 @@ class Utils {
     }
     //Delete video
     static async deleteVideo(videoOwner, videoNumber) {
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('videolist').child(videoNumber)
+        const ref = admin.database().ref('USER').child(videoOwner).child('videolist').child(videoNumber)
         const snapshot = await ref.once('value')
 
         const videoUrl = snapshot.toJSON().url
@@ -1069,7 +1071,7 @@ class Utils {
         var index1 = mainUrl.indexOf("?")
         var videoFileName = mainUrl.substring(index + 3, index1)
 
-        const storageItem = firebase.admin.storage().bucket().file('Videos/' + userIdentifier + '/' + videoFileName)
+        const storageItem = admin.storage().bucket().file('Videos/' + userIdentifier + '/' + videoFileName)
        
         await storageItem.delete()
         console.log('deletedVideo from Storage')
@@ -1079,7 +1081,7 @@ class Utils {
 
     static async dislikeComment(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
         
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
         const likeDislike = ref.child('dislikedby')
         likeDislike.push().set({"id": userIdentifier})
     
@@ -1093,7 +1095,7 @@ class Utils {
     
     static async deleteCommentDislike(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
         
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier)
         const likeDislike = ref.child('dislikedby').orderByChild('id').equalTo(userIdentifier)
         const likeDislikeSnapshot = await likeDislike.once('child_added')
         likeDislikeSnapshot.ref.remove()
@@ -1107,7 +1109,7 @@ class Utils {
     }
     
     static async likesComment(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier).child('likedby')
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier).child('likedby')
         if (ref.exists == false) {
             return false
         }
@@ -1126,7 +1128,7 @@ class Utils {
     }
     
     static async dislikesComment(userIdentifier, videoOwner, videoNumber, commentIdentifier) {
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier).child('dislikedby')
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber).child(commentIdentifier).child('dislikedby')
         if (ref.exists == false) {
             return false
         }
@@ -1145,7 +1147,7 @@ class Utils {
     }
 
     static async loadVideoComments(videoOwner, videoNumber) {
-        const ref = firebase.admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber)
+        const ref = admin.database().ref('USER').child(videoOwner).child('comments').child(videoNumber)
         const snapshot = await ref.once('value')
         var comments = []
         snapshot.forEach(child => {
@@ -1221,12 +1223,12 @@ static async updateImage(req) {
             const imageUrl = `https://firebasestorage.googleapis.com/v0/b/theatronfinal.appspot.com/o/profileImages%2F${imageFileName}?alt=media&token=${generatedToken}`;
 
             //Change url
-            firebase.admin.database().ref('USER').child(uid).update({'photourl': imageUrl})
+            admin.database().ref('USER').child(uid).update({'photourl': imageUrl})
 
-            const smallUser = firebase.admin.database().ref().child("SMALL-USER").child(req.user.uid)
+            const smallUser = admin.database().ref().child("SMALL-USER").child(req.user.uid)
             smallUser.update({'photourl': imageUrl})
             console.log(req.user.uid)
-            const generalQuery = firebase.admin.database().ref().child('ALLUSER').orderByChild('id').equalTo(req.user.uid)
+            const generalQuery = admin.database().ref().child('ALLUSER').orderByChild('id').equalTo(req.user.uid)
             const key = (await generalQuery.once('child_added')).key
   
             const generalRef = admin.database().ref().child('ALLUSER').child(key)
@@ -1244,7 +1246,7 @@ static async updateImage(req) {
 }
 
 static async pendingVideo() {
-    const ref = firebase.admin.database().ref('PENDING_VIDEOS')
+    const ref = admin.database().ref('PENDING_VIDEOS')
     const snapshot = await ref.once('value')
     var video = []
     snapshot.forEach(child => {
@@ -1289,7 +1291,7 @@ static async pendingVideo() {
     //     });
 
     //     busboy.on("finish", () => {
-    //         firebase.admin.storage().bucket()
+    //         admin.storage().bucket()
     //         .upload(thumbnail.filePath, {
     //             resumable: false,
     //             destination: 'thumbnails/' + thumbnailFileName,
@@ -1315,13 +1317,13 @@ static async pendingVideo() {
     static async deleteFriendRequest(userId, friendId) {
         
         // delete request from user data...
-        const userRef = firebase.admin.database().ref(`USER/${userId}/friendrns`).orderByChild('id').equalTo(friendId)
+        const userRef = admin.database().ref(`USER/${userId}/friendrns`).orderByChild('id').equalTo(friendId)
         const userSnap = await userRef.once('value')
         console.log(userSnap.val());
         userSnap.ref.remove();
 
         // delete request from friend data...
-        const friendRef = firebase.admin.database().ref(`USER/${friendId}/friendrns`).orderByChild('id').equalTo(userId)
+        const friendRef = admin.database().ref(`USER/${friendId}/friendrns`).orderByChild('id').equalTo(userId)
         const friendSnap = await friendRef.once('value')
         friendSnap.ref.remove();
 

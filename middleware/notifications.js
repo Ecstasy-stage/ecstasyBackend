@@ -1,4 +1,4 @@
-const firebase = require('./firebaseFunc.js');
+const firebase = require('./firebase_admin.js');
 var https = require('follow-redirects').https;
   var fs = require('fs');
 

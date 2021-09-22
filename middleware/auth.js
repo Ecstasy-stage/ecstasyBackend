@@ -1,6 +1,6 @@
 //Authorization Middleware
 
-const firebase = require('./firebaseFunc.js');
+const admin = require('./firebase_admin.js');
 
 
 const auth = async (req, res, next) => {
@@ -8,13 +8,13 @@ const auth = async (req, res, next) => {
             var user;
             if(req.headers.uid){
                 const uid = await req.headers.uid;
-                user = await firebase.admin.auth().getUser(uid);
+                user = await admin.auth().getUser(uid);
                 
             }else{
                 const token = await req.header('Authorization').replace('Bearer ', '');
-                const decodedToken = await firebase.admin.auth().verifyIdToken(token.toString());
+                const decodedToken = await admin.auth().verifyIdToken(token.toString());
                 const uid =  decodedToken.uid;
-                user = await firebase.admin.auth().getUser(uid);
+                user = await admin.auth().getUser(uid);
             }
         
 

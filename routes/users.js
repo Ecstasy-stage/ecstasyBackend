@@ -1,5 +1,5 @@
 var admin = require("firebase-admin");
-const firebase = require('../middleware/firebaseFunc');
+const firebase = require('../middleware/firebase_admin');
 
 const express = require('express');
 const router = new express.Router();
@@ -98,7 +98,7 @@ router.post('/get-otp' , async (req , res)  => {
             sid = service.sid;
         })
         .catch(err => {
-            console.log(err);
+            console.error(err);
             if(err.status != 200) {
                 res.json({
                     "service_id": null,

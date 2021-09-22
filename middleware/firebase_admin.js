@@ -1,4 +1,4 @@
-var admin = require("firebase-admin");
+const admin = require("firebase-admin");
 
 const serviceAccountKey = require("../config/service_account_key.js");
 
@@ -8,13 +8,6 @@ admin.initializeApp({
     storageBucket:"theatronfinal.appspot.com"
 });
 
-var db = admin.database();
-var storage = admin.storage()
 
-module.exports = {
-    admin,
-    db,
-    storage,
-    
-}
+module.exports = admin;
 
