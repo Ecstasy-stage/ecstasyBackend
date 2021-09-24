@@ -11,8 +11,8 @@ const auth = async (req, res, next) => {
                 user = await admin.auth().getUser(uid);
                 
             }else{
-                console.log('token is: ', token);
                 const token = await req.header('Authorization').replace('Bearer ', '');
+                console.log('token is: ', token);
                 const decodedToken = await admin.auth().verifyIdToken(token.toString());
                 const uid =  decodedToken.uid;
                 user = await admin.auth().getUser(uid);
