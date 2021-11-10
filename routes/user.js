@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 
-const admin = require("../middleware/firebase_admin");
 const auth = require("../middleware/auth");
 
 const { createQuery, readQuery, updateQuery } = require("../crud_functions/user");
@@ -34,7 +33,8 @@ router.post('/login', auth, async(req, res) => {
       res.send('success')
     }
   
-})
+});
+
 
 // find user from their id....
 router.post('/profile/user-from-id', auth, (req, res) => {
@@ -91,3 +91,66 @@ router.post('/profile/edit', auth, async (req, res) => {
         }
     });
 });
+
+
+// search user by name....
+router.post('/profile/users-from-name', auth, async (req, res) => {
+    const name = req.headers.text;
+    if(name === undefined) {
+        res.status(400).json({
+            error: true,
+            message: "name queried is undefined"
+        });
+    }
+    const result = await readQuery.usersFromName(name, req.user.uid);
+    result.filter(user => user.type == "artist");
+    return res.status(200).json(result);
+});
+
+
+// follow a user....
+router.post('/profile/admire', auth, async (req, res) => {
+    try {
+        const admireId = req.headers.user;
+        if(admireId === undefined) {
+            res.status(400).json({
+                error: true,
+                message: "Identifier received is undefined"
+            });
+            return;
+        }
+        await updateQuery.admire(req.user.uid, admireId);
+        res.status(200).json({
+            message: "Success"
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: true,
+            message: error.message
+        })
+    }
+});
+
+
+// unfollow a user....
+router.post('/profile/remove-admire', auth, async (req, res) => {
+    try {
+        const admireId = req.headers.user;
+        if(admireId === undefined) {
+            res.status(400).json({
+                error: true,
+                message: "Identifier received is undefined"
+            });
+            return;
+        }
+        await updateQuery.removeAdmire(req.user.uid, admireId);
+        res.status(200).json({
+            message: "Success"
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: true,
+            message: error.message
+        });
+    } 
+})

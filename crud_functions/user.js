@@ -138,6 +138,53 @@ class updateQuery {
         }
     }
 
+    static admire = async (userId, admireId) => {
+        const userRef = findRef(`USER/${userId}/admiring`);
+        const userSnaps = await userRef.once('value');
+        userRef.child(String(userSnaps.numChildren())).set({
+            'id': admireId
+        });
+
+        const admireRef = findRef(`USER/${admireId}`);
+        const admireSnaps = await admireRef.once('value');
+        let admireCount = admireSnaps.toJSON().admirerscount;
+        if(admireCount === undefined) admireCount = 0;
+        admireRef.update({
+            'admirerscount': String(Number(admireCount) + 1)
+        });
+
+        const admiringRef = admireRef.child('admirers');
+        const admiringSnaps = await admiringRef.once('value');
+        admiringRef.child(String(admiringSnaps.numChildren())).set({
+            'id': userId
+        });
+    }
+
+    static removeAdmire = async (userId, admireId) => {
+        const ref = findRef("USER")
+        const admiringRef = ref.child(userIdentifier).child("admiring").orderByChild('id').equalTo(admireIdentifier)
+        const admiringSnapshot = await admiringRef.once('child_added')
+        if (admiringSnapshot.exists) {
+            admiringSnapshot.ref.remove()
+        }
+    
+        const admirersRef = ref.child(admireIdentifier).child("admirers").orderByChild('id').equalTo(userIdentifier)
+        const admirersSnapshot = await admirersRef.once('child_added')
+        if (admirersSnapshot.exists) {
+            admirersSnapshot.ref.remove()
+        }
+
+        const admiringCountRef = ref.child(admireIdentifier)
+        const countSnapshot = await admiringCountRef.once('value')
+        let count = Number(countSnapshot.toJSON().admirerscount)
+        if (count === undefined) {
+            count = 1;
+        }
+        admiringCountRef.update({
+            "admirerscount": String(count - 1)
+        })
+    }
+
 }
 
 //====================READ Queries=====================================
@@ -157,6 +204,22 @@ class readQuery {
         user = user.toJSON();
         user.id = ref.key;
         return user;
+    }
+
+    static usersFromName = async (name, uid) => {
+        const users = [];
+        const ref = findRef(`USER`).orderByChild("name").startAt(name).endAt(name + '\uf8ff');
+        const snapshot = await ref.once('value');
+
+        snapshot.forEach(snap => {
+            let user = snap.toJSON();
+            user.id = snap.key;
+            if(user.id !== uid) {
+                users.push(user);
+            }
+        });
+
+        return users;
     }
 }
 
